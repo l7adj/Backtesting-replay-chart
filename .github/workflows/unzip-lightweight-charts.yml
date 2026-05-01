@@ -15,14 +15,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Clone TradingView lightweight-charts
+      - name: Download source zip
         run: |
-          git clone --depth 1 --branch v5.1.0 https://github.com/tradingview/lightweight-charts.git imported-lightweight-charts
+          curl -L -o lightweight-charts.zip https://github.com/tradingview/lightweight-charts/archive/refs/tags/v5.1.0.zip
+          unzip -q lightweight-charts.zip
 
-      - name: Copy files into project folder
+      - name: Copy files into repository folder
         run: |
           mkdir -p tradingview-lightweight-charts-5.1.0
-          cp -a imported-lightweight-charts/. tradingview-lightweight-charts-5.1.0/
+          cp -a lightweight-charts-5.1.0/. tradingview-lightweight-charts-5.1.0/
 
       - name: Commit files
         run: |
