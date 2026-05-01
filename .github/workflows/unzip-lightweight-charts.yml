@@ -1,0 +1,32 @@
+name: Unzip lightweight-charts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip library
+        run: |
+          if [ ! -f lightweight-charts-5.1.0.zip ]; then
+            echo "Missing lightweight-charts-5.1.0.zip in repository root"
+            exit 1
+          fi
+          unzip -o lightweight-charts-5.1.0.zip
+          mkdir -p tradingview-lightweight-charts-5.1.0
+          cp -R lightweight-charts-5.1.0/. tradingview-lightweight-charts-5.1.0/
+
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add tradingview-lightweight-charts-5.1.0
+          git commit -m "Extract lightweight-charts source files" || echo "No changes to commit"
+          git push
