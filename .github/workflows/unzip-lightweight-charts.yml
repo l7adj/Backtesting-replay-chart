@@ -10,25 +10,30 @@ jobs:
   import-source:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout your repository
         uses: actions/checkout@v4
         with:
+          path: app
           fetch-depth: 0
 
-      - name: Download source zip
-        run: |
-          curl -L -o lightweight-charts.zip https://github.com/tradingview/lightweight-charts/archive/refs/tags/v5.1.0.zip
-          unzip -q lightweight-charts.zip
+      - name: Checkout TradingView lightweight-charts
+        uses: actions/checkout@v4
+        with:
+          repository: tradingview/lightweight-charts
+          ref: v5.1.0
+          path: tv-source
 
-      - name: Copy files into repository folder
+      - name: Copy source into your repository
         run: |
-          mkdir -p tradingview-lightweight-charts-5.1.0
-          cp -a lightweight-charts-5.1.0/. tradingview-lightweight-charts-5.1.0/
+          mkdir -p app/tradingview-lightweight-charts-5.1.0
+          cp -a tv-source/. app/tradingview-lightweight-charts-5.1.0/
 
-      - name: Commit files
+      - name: Commit imported files
+        working-directory: app
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add tradingview-lightweight-charts-5.1.0
           git commit -m "Import TradingView lightweight-charts v5.1.0 files" || true
+          git pull --rebase origin main || true
           git push
