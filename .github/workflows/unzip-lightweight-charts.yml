@@ -1,46 +1,54 @@
-name: Extract uploaded lightweight-charts zip
+name: Import TradingView lightweight-charts source
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - lightweight-charts-5.1.0.zip
-      - .github/workflows/unzip-lightweight-charts.yml
 
 permissions:
   contents: write
 
 jobs:
-  extract:
+  import-source:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout your repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract uploaded zip
+      - name: Download TradingView source using GitHub archive
         run: |
-          if [ ! -f lightweight-charts-5.1.0.zip ]; then
-            echo "ZIP file not found yet. Upload step is still pending."
-            exit 0
-          fi
-          rm -rf .tmp-lightweight-charts tradingview-lightweight-charts-5.1.0
-          mkdir -p .tmp-lightweight-charts
-          unzip -q lightweight-charts-5.1.0.zip -d .tmp-lightweight-charts
-          mkdir -p tradingview-lightweight-charts-5.1.0
-          cp -a .tmp-lightweight-charts/lightweight-charts-5.1.0/. tradingview-lightweight-charts-5.1.0/
-          rm -rf .tmp-lightweight-charts
+          python - <<'PY'
+          import urllib.request
+          import zipfile
+          import shutil
+          from pathlib import Path
 
-      - name: Commit extracted files
+          url = 'https://github.com/tradingview/lightweight-charts/archive/refs/heads/master.zip'
+          zip_path = Path('tv.zip')
+          temp = Path('tv-temp')
+          target = Path('tradingview-lightweight-charts-source')
+
+          urllib.request.urlretrieve(url, zip_path)
+          if temp.exists():
+              shutil.rmtree(temp)
+          if target.exists():
+              shutil.rmtree(target)
+          with zipfile.ZipFile(zip_path) as z:
+              z.extractall(temp)
+          source = next(temp.iterdir())
+          shutil.copytree(source, target)
+          zip_path.unlink()
+          shutil.rmtree(temp)
+          PY
+
+      - name: Commit imported files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add tradingview-lightweight-charts-5.1.0
+          git add tradingview-lightweight-charts-source
           if git diff --cached --quiet; then
-            echo "No extracted files to commit"
+            echo "No changes to commit"
           else
-            git commit -m "Extract TradingView lightweight-charts v5.1.0 source files"
+            git commit -m "Import TradingView lightweight-charts source files"
             git push
           fi
