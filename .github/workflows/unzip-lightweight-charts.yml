@@ -1,39 +1,46 @@
-name: Import TradingView lightweight-charts
+name: Extract uploaded lightweight-charts zip
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - lightweight-charts-5.1.0.zip
+      - .github/workflows/unzip-lightweight-charts.yml
 
 permissions:
   contents: write
 
 jobs:
-  import-source:
+  extract:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout your repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          path: app
           fetch-depth: 0
 
-      - name: Checkout TradingView lightweight-charts
-        uses: actions/checkout@v4
-        with:
-          repository: tradingview/lightweight-charts
-          ref: v5.1.0
-          path: tv-source
-
-      - name: Copy source into your repository
+      - name: Extract uploaded zip
         run: |
-          mkdir -p app/tradingview-lightweight-charts-5.1.0
-          cp -a tv-source/. app/tradingview-lightweight-charts-5.1.0/
+          if [ ! -f lightweight-charts-5.1.0.zip ]; then
+            echo "ZIP file not found yet. Upload step is still pending."
+            exit 0
+          fi
+          rm -rf .tmp-lightweight-charts tradingview-lightweight-charts-5.1.0
+          mkdir -p .tmp-lightweight-charts
+          unzip -q lightweight-charts-5.1.0.zip -d .tmp-lightweight-charts
+          mkdir -p tradingview-lightweight-charts-5.1.0
+          cp -a .tmp-lightweight-charts/lightweight-charts-5.1.0/. tradingview-lightweight-charts-5.1.0/
+          rm -rf .tmp-lightweight-charts
 
-      - name: Commit imported files
-        working-directory: app
+      - name: Commit extracted files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add tradingview-lightweight-charts-5.1.0
-          git commit -m "Import TradingView lightweight-charts v5.1.0 files" || true
-          git pull --rebase origin main || true
-          git push
+          if git diff --cached --quiet; then
+            echo "No extracted files to commit"
+          else
+            git commit -m "Extract TradingView lightweight-charts v5.1.0 source files"
+            git push
+          fi
